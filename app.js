@@ -1,68 +1,88 @@
-(function (){
-'use strict';
-angular.module('ControllerAsApp', [])
-.controller('ToBuyItemsController', ToBuyItemsController)
-.controller('BoughtItemsController', BoughtItemsController)
-.service('ShoppingListService', ShoppingListService);
+(function () {
+  'use strict'
 
-ToBuyItemsController.$inject = ['ShoppingListService'];
-function ToBuyItemsController(ShoppingListService){
-  var list1 = this;
-  //var shopping = ShoppingListFactory();
-  // Use factory to create new shopping list service
-  list1.ToBuyList =
-  [     {name:"cookies",quantity:10},
-        {name:"bananas",quantity:10},
-        {name:"fries",quantity:10},
-        {name:"noodles",quantity:10},
-        {name:"peppers",quantity:10},
-    ];
+angular.module('NarrowItDownApp', [])
+.controller('NarrowItDownController', NarrowItDownController)
+.service('MenuSearchService', MenuSearchService)
+.directive('foundItems', FoundItemsDirective)
+.constant('ApiBasePath', "https://davids-restaurant.herokuapp.com");
 
-  list1.check = function (number) {
-    if (number == 0) {
-      return true;
-    } else {
-      return false;
+
+NarrowItDownController.$inject = ['MenuSearchService'];
+function NarrowItDownController(MenuSearchService) {
+  var ctrl = this;
+  ctrl.searchTerm = "";
+  ctrl.searchResult = ""; //Set to empty string if all OK
+  ctrl.found = [];
+
+  ctrl.search = function() {
+    if(ctrl.searchTerm ) {
+      ctrl.searchResult = "";
+      var promise = MenuSearchService.getMatchedMenuItems(ctrl.searchTerm);
+
+      promise.then(function(result) {
+        ctrl.found = result;
+        if(ctrl.found.length == 0) {
+          ctrl.searchResult = "Nothing found (matching \"" + ctrl.searchTerm + "\")";
+        }
+      });
+    }
+    else
+    {
+      ctrl.searchResult = "Nothing found";
     }
   };
 
-  list1.removeItem = function (itemIndex) {
-    ShoppingListService.addItems(list1.ToBuyList[itemIndex].name, list1.ToBuyList[itemIndex].quantity);
-    list1.ToBuyList.splice(itemIndex, 1);
-  };
-
-}
-
-BoughtItemsController.$inject = ['ShoppingListService'];
-function BoughtItemsController(ShoppingListService){
-  var list2 = this;
-
-  list2.items = ShoppingListService.getItems();
-  list2.check = function (number) {
-    if (number == 0) {
-      return true;
-    } else {
-      return false;
-    }
+  ctrl.dontWant = function(index) {
+    console.log("Index: ", index);
+    ctrl.found.splice(index, 1);
   };
 }
 
-function ShoppingListService() {
-  var service = this;
-  var serviceItems = [];
 
-  service.addItems = function(itemName, quantity) {
-    var item = {
-      name: itemName,
-      quantity: quantity
-    };
-    serviceItems.push(item);
-  };
+MenuSearchService.$inject = ["$http", "ApiBasePath"];
+function MenuSearchService($http, ApiBasePath) {
+var service = this;
+   service.getMatchedMenuItems = function(searchTerm) {
+     return $http({
+       method: "GET",
+       url: (ApiBasePath + "/menu_items.json")
+     })
+       .then(function(response){
+         var menuItems = response.data;
+         var foundItems = filterOnDescription(menuItems.menu_items, searchTerm);
 
-  service.getItems = function(){
-    return serviceItems;
-  }
-}
+         return foundItems;
+       });
+   };
 
+   function filterOnDescription(list, searchTerm) {
+     var newList = [];
 
+     for(var i = 0; i < list.length; i++) {
+       if(list[i].description.indexOf(searchTerm) > 0) {
+         newList.push(list[i]);
+       }
+     }
+
+     return newList;
+   }
+ }
+
+ function FoundItemsDirective() {
+   var ddo = {
+     templateUrl: "foundItems.html",
+     scope: {
+       list: "<",
+       title: "@title",
+       result: "@result",
+       dontWant: "&"
+     },
+     // controller: FoundItemsDirectiveController,
+     // controllerAs: "list",
+     // bindToController: true
+   };
+
+   return ddo;
+ }
 })();
