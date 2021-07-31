@@ -37,6 +37,7 @@ var foundItems = [];
      });
      return response.then(function(result) {
        var itemsArray = result.data.menu_items;
+       foundItems = [];
        for (var i = 0; i < itemsArray.length; i++) {
          if (itemsArray[i].description.toLowerCase().indexOf(searchTerm.toLowerCase()) >= 0) {
            foundItems.push(itemsArray[i]);
@@ -67,7 +68,7 @@ var foundItems = [];
  function FoundItemsDirectiveController() {
    var list = this;
    list.nothingFound = function() {
-     return list.items != undefined && foundCtrl.items.length === 0;
+     return list.items != undefined && list.items.length === 0;
    }
  }
 })();
