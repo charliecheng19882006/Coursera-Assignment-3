@@ -11,71 +11,63 @@ angular.module('NarrowItDownApp', [])
 NarrowItDownController.$inject = ['MenuSearchService'];
 function NarrowItDownController(MenuSearchService) {
   var ctrl = this;
-  ctrl.searchTerm = "";
-  ctrl.Result = ""; //Set to empty string if all OK
-  ctrl.found = [];
-
   ctrl.search = function() {
-    if(ctrl.searchTerm) {
-      ctrl.Result = "";
-      var promise = MenuSearchService.getMatchedMenuItems(ctrl.searchTerm);
-
-      promise.then(function(response) {
-        var list = response.data;
-        ctrl.found = MenuSearchService.filterOnDescription(list, ctrl.searchTerm);
-        if(ctrl.found.length === 0) {
-          ctrl.Result = "Nothing found (matching \"" + ctrl.searchTerm + "\")";
-        }
-      });
+      if (ctrl.searchTerm === "" || ctrl.searchTerm === undefined) {
+        ctrl.found = [];
+      } else {
+        MenuSearchService.getMatchedMenuItems(ctrl.searchTerm)
+        .then(function(result) {
+          ctrl.found = result;
+        });
+      }
     }
-    else
-    {
-      ctrl.Result = "Nothing found";
-    }
+  ctrl.removeItem = function(itemIndex) {
+    MenuSearchService.removeItem(itemIndex);
   };
-
-    ctrl.removeItem = function(index) {
-      console.log("Index: ", index);
-      ctrl.found.splice(index, 1);
-    };
-  }
-
+}
 
 MenuSearchService.$inject = ["$http", "ApiBasePath"];
 function MenuSearchService($http, ApiBasePath) {
 var service = this;
+var foundItems = [];
    service.getMatchedMenuItems = function(searchTerm) {
      var response = $http({
        method: "GET",
        url: (ApiBasePath + "/menu_items.json")
-     })
-   };
-
-   function filterOnDescription(list, searchTerm) {
-     var array = [];
-
-    for(var i = 0; i < list.length; i++) {
-       if(list[i].description.indexOf(searchTerm) !== -1) {
-         array.push(list[i]);
-        }
-      }
-      return array;
-    }
+     });
+     return response.then(function(result) {
+       var itemsArray = result.data.menu_items;
+       for (var i = 0; i < itemsArray.length; i++) {
+         if (itemsArray[i].description.toLowerCase().indexOf(searchTerm.toLowerCase()) >= 0) {
+           foundItems.push(itemsArray[i]);
+         }
+       }
+       return foundItems;
+   });
+  }
+  service.removeItem = function(itemIndex) {
+    foundItems.splice(itemIndex, 1);
+  };
 }
 
  function FoundItemsDirective() {
    var ddo = {
      templateUrl: 'foundItems.html',
      scope: {
-       list: "=foundItems",
-       title: "@title",
-       result: "@result",
-       remove: "&remove"
+       items: '<',
+       remove: '&'
      },
-     // controller: FoundItemsDirectiveController,
-     // controllerAs: "list",
-     // bindToController: true
+     controller: FoundItemsDirectiveController,
+     controllerAs: 'list',
+     bindToController: true
    };
    return ddo;
+ }
+
+ function FoundItemsDirectiveController() {
+   var list = this;
+   list.nothingFound = function() {
+     return list.items != undefined && foundCtrl.items.length === 0;
+   }
  }
 })();

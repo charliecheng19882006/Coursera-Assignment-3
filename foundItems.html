@@ -1,9 +1,11 @@
-<div id="result" class="container">
+<div>
   <ul>
-    <li ng-repeat="item in list">
-      {{ item.name }} {{ item.short_name }}
-      <button class="btn btn-default" ng-click= remove({index : $index})><span class="glyphicon glyphicon-ok"></span> Remove</button>
+    <li ng-repeat="item in list.items">
+      [{{ item.short_name }}]{{ item.name }} {{item.description}}
+      <button class="btn btn-default" ng-click= "list.remove({index : $index})"><span class="glyphicon glyphicon-ok"></span> Don't want this one! </button>
     </li>
   </ul>
+
+  <div ng-if="list.nothingFound()" class="message">Nothing found.</div>
 
 </div>
